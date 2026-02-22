@@ -1,25 +1,43 @@
 const express = require('express');
 const Booking = require('../models/Booking');
 const Saree = require('../models/Saree');
+const User = require('../models/User');
 const auth = require('../middleware/auth');
 const { body, validationResult } = require('express-validator');
+const { Op } = require('sequelize');
 
 const router = express.Router();
 
 // Get user's bookings
 router.get('/', auth, async (req, res) => {
   try {
-    let query = {};
+    let where = {};
     if (req.user.role === 'buyer') {
-      query.buyerId = req.user.id;
+      where.buyerId = req.user.id;
     } else if (req.user.role === 'seller') {
-      query.sellerId = req.user.id;
+      where.sellerId = req.user.id;
     }
 
-    const bookings = await Booking.find(query)
-      .populate('sareeId', 'title images pricePerDay')
-      .populate('buyerId', 'name email')
-      .populate('sellerId', 'name email');
+    const bookings = await Booking.findAll({
+      where,
+      include: [
+        {
+          model: Saree,
+          as: 'saree',
+          attributes: ['title', 'images', 'pricePerDay']
+        },
+        {
+          model: User,
+          as: 'buyer',
+          attributes: ['name', 'email']
+        },
+        {
+          model: User,
+          as: 'seller',
+          attributes: ['name', 'email']
+        }
+      ]
+    });
     res.json(bookings);
   } catch (err) {
     console.error(err.message);
@@ -29,7 +47,7 @@ router.get('/', auth, async (req, res) => {
 
 // Create booking
 router.post('/', auth, [
-  body('sareeId').isMongoId(),
+  body('sareeId').isInt(),
   body('rentalStartDate').isISO8601(),
   body('rentalEndDate').isISO8601(),
 ], async (req, res) => {
@@ -41,7 +59,7 @@ router.post('/', auth, [
   try {
     const { sareeId, rentalStartDate, rentalEndDate } = req.body;
 
-    const saree = await Saree.findById(sareeId);
+    const saree = await Saree.findByPk(sareeId);
     if (!saree) {
       return res.status(404).json({ message: 'Saree not found' });
     }
@@ -53,18 +71,23 @@ router.post('/', auth, [
 
     // Check availability
     const conflictingBooking = await Booking.findOne({
-      sareeId,
-      $or: [
-        { rentalStartDate: { $lte: end }, rentalEndDate: { $gte: start } },
-      ],
-      status: { $in: ['pending', 'confirmed'] },
+      where: {
+        sareeId,
+        [Op.or]: [
+          {
+            rentalStartDate: { [Op.lte]: end },
+            rentalEndDate: { [Op.gte]: start }
+          }
+        ],
+        status: { [Op.in]: ['pending', 'confirmed'] }
+      }
     });
 
     if (conflictingBooking) {
       return res.status(400).json({ message: 'Saree not available for selected dates' });
     }
 
-    const booking = new Booking({
+    const booking = await Booking.create({
       sareeId,
       buyerId: req.user.id,
       sellerId: saree.sellerId,
@@ -73,7 +96,6 @@ router.post('/', auth, [
       totalAmount,
     });
 
-    await booking.save();
     res.json(booking);
   } catch (err) {
     console.error(err.message);
@@ -91,18 +113,18 @@ router.put('/:id/status', auth, [
   }
 
   try {
-    const booking = await Booking.findById(req.params.id);
+    const booking = await Booking.findByPk(req.params.id);
     if (!booking) {
       return res.status(404).json({ message: 'Booking not found' });
     }
 
-    if (booking.sellerId.toString() !== req.user.id && req.user.role !== 'admin') {
+    if (booking.sellerId !== req.user.id && req.user.role !== 'admin') {
       return res.status(403).json({ message: 'Access denied' });
     }
 
-    booking.status = req.body.status;
-    await booking.save();
-    res.json(booking);
+    await Booking.update({ status: req.body.status }, { where: { id: req.params.id } });
+    const updatedBooking = await Booking.findByPk(req.params.id);
+    res.json(updatedBooking);
   } catch (err) {
     console.error(err.message);
     res.status(500).send('Server error');

@@ -1,42 +1,51 @@
-const mongoose = require('mongoose');
+const { DataTypes } = require('sequelize');
+const sequelize = require('../config/sequelize');
 
-const sareeSchema = new mongoose.Schema({
+const Saree = sequelize.define('Saree', {
   title: {
-    type: String,
-    required: true,
-    trim: true,
+    type: DataTypes.STRING,
+    allowNull: false,
+    validate: {
+      notEmpty: true,
+    },
   },
   description: {
-    type: String,
-    required: true,
+    type: DataTypes.TEXT,
+    allowNull: false,
   },
   pricePerDay: {
-    type: Number,
-    required: true,
-    min: 0,
+    type: DataTypes.DECIMAL(10, 2),
+    allowNull: false,
+    validate: {
+      min: 0,
+    },
   },
   color: {
-    type: String,
-    required: true,
+    type: DataTypes.STRING,
+    allowNull: false,
   },
   occasion: {
-    type: String,
-    required: true,
+    type: DataTypes.STRING,
+    allowNull: false,
   },
-  images: [{
-    type: String, // URLs to images
-  }],
+  images: {
+    type: DataTypes.ARRAY(DataTypes.STRING),
+    allowNull: true,
+  },
   sellerId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
-    required: true,
+    type: DataTypes.INTEGER,
+    allowNull: false,
+    references: {
+      model: 'Users',
+      key: 'id',
+    },
   },
-  availabilityDates: [{
-    start: Date,
-    end: Date,
-  }],
+  availabilityDates: {
+    type: DataTypes.JSON, // array of {start, end}
+    allowNull: true,
+  },
 }, {
   timestamps: true,
 });
 
-module.exports = mongoose.model('Saree', sareeSchema);
+module.exports = Saree;

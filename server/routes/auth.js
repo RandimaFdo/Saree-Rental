@@ -21,7 +21,7 @@ router.post('/register', [
   try {
     const { name, email, password, role } = req.body;
 
-    let user = await User.findOne({ email });
+    let user = await User.findOne({ where: { email } });
     if (user) {
       return res.status(400).json({ message: 'User already exists' });
     }
@@ -29,14 +29,12 @@ router.post('/register', [
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
-    user = new User({
+    user = await User.create({
       name,
       email,
       password: hashedPassword,
       role,
     });
-
-    await user.save();
 
     const payload = {
       user: {
@@ -68,7 +66,7 @@ router.post('/login', [
   try {
     const { email, password } = req.body;
 
-    const user = await User.findOne({ email });
+    const user = await User.findOne({ where: { email } });
     if (!user) {
       return res.status(400).json({ message: 'Invalid credentials' });
     }
@@ -98,8 +96,12 @@ router.post('/login', [
 // Get current user
 router.get('/me', require('../middleware/auth'), async (req, res) => {
   try {
-    const user = await User.findById(req.user.id).select('-password');
-    res.json(user);
+    const user = await User.findByPk(req.user.id);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    const { password, ...userData } = user.dataValues;
+    res.json(userData);
   } catch (err) {
     console.error(err.message);
     res.status(500).send('Server error');

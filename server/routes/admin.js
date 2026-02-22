@@ -12,7 +12,7 @@ router.get('/users', auth, async (req, res) => {
   }
 
   try {
-    const users = await User.find().select('-password');
+    const users = await User.findAll({ attributes: { exclude: ['password'] } });
     res.json(users);
   } catch (err) {
     console.error(err.message);
@@ -27,14 +27,14 @@ router.put('/users/:id/approve', auth, async (req, res) => {
   }
 
   try {
-    const user = await User.findById(req.params.id);
+    const user = await User.findByPk(req.params.id);
     if (!user || user.role !== 'seller') {
       return res.status(404).json({ message: 'Seller not found' });
     }
 
-    user.isApproved = true;
-    await user.save();
-    res.json(user);
+    await User.update({ isApproved: true }, { where: { id: req.params.id } });
+    const updatedUser = await User.findByPk(req.params.id, { attributes: { exclude: ['password'] } });
+    res.json(updatedUser);
   } catch (err) {
     console.error(err.message);
     res.status(500).send('Server error');
@@ -48,7 +48,12 @@ router.delete('/sarees/:id', auth, async (req, res) => {
   }
 
   try {
-    await Saree.findByIdAndDelete(req.params.id);
+    const saree = await Saree.findByPk(req.params.id);
+    if (!saree) {
+      return res.status(404).json({ message: 'Saree not found' });
+    }
+
+    await Saree.destroy({ where: { id: req.params.id } });
     res.json({ message: 'Saree removed' });
   } catch (err) {
     console.error(err.message);

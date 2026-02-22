@@ -1,49 +1,48 @@
-const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 const User = require('../models/User');
 const Saree = require('../models/Saree');
-const connectDB = require('../config/database');
+const sequelize = require('../config/sequelize');
 
 const seedData = async () => {
   try {
-    await connectDB();
+    await sequelize.authenticate();
+    console.log('Database connected for seeding');
 
     // Clear existing data
-    await User.deleteMany();
-    await Saree.deleteMany();
+    await User.destroy({ where: {} });
+    await Saree.destroy({ where: {} });
+
+    const salt = await bcrypt.genSalt(10);
 
     // Create admin user
-    const salt = await bcrypt.genSalt(10);
     const adminPassword = await bcrypt.hash('admin123', salt);
-    const admin = new User({
+    const admin = await User.create({
       name: 'Admin User',
       email: 'admin@example.com',
       password: adminPassword,
       role: 'admin',
       isApproved: true,
     });
-    await admin.save();
 
-    // Create sample sellers
-    const seller1Password = await bcrypt.hash('seller123', salt);
-    const seller1 = new User({
-      name: 'Seller One',
-      email: 'seller1@example.com',
-      password: seller1Password,
+    // Create buyer user
+    const buyerPassword = await bcrypt.hash('buyer123', salt);
+    const buyer = await User.create({
+      name: 'Buyer User',
+      email: 'buyer@example.com',
+      password: buyerPassword,
+      role: 'buyer',
+      isApproved: true,
+    });
+
+    // Create seller user
+    const sellerPassword = await bcrypt.hash('seller123', salt);
+    const seller = await User.create({
+      name: 'Seller User',
+      email: 'seller@example.com',
+      password: sellerPassword,
       role: 'seller',
       isApproved: true,
     });
-    await seller1.save();
-
-    const seller2Password = await bcrypt.hash('seller123', salt);
-    const seller2 = new User({
-      name: 'Seller Two',
-      email: 'seller2@example.com',
-      password: seller2Password,
-      role: 'seller',
-      isApproved: true,
-    });
-    await seller2.save();
 
     // Create sample sarees
     const sarees = [
@@ -54,7 +53,7 @@ const seedData = async () => {
         color: 'Red',
         occasion: 'Wedding',
         images: ['https://via.placeholder.com/400x500?text=Red+Silk+Saree'],
-        sellerId: seller1._id,
+        sellerId: seller.id,
         availabilityDates: [{ start: new Date(), end: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) }],
       },
       {
@@ -64,7 +63,7 @@ const seedData = async () => {
         color: 'Blue',
         occasion: 'Casual',
         images: ['https://via.placeholder.com/400x500?text=Blue+Cotton+Saree'],
-        sellerId: seller2._id,
+        sellerId: seller.id,
         availabilityDates: [{ start: new Date(), end: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) }],
       },
       {
@@ -74,7 +73,7 @@ const seedData = async () => {
         color: 'Green',
         occasion: 'Festive',
         images: ['https://via.placeholder.com/400x500?text=Green+Embroidered+Saree'],
-        sellerId: seller1._id,
+        sellerId: seller.id,
         availabilityDates: [{ start: new Date(), end: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) }],
       },
       {

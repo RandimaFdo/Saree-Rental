@@ -12,6 +12,17 @@ const Dashboard = () => {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('overview');
+  const [showForm, setShowForm] = useState(false);
+  const [editingSaree, setEditingSaree] = useState(null);
+  const [formData, setFormData] = useState({
+    title: '',
+    description: '',
+    pricePerDay: '',
+    color: '',
+    occasion: '',
+    images: [],
+    availabilityDates: ''
+  });
 
   useEffect(() => {
     if (user) {
@@ -34,7 +45,7 @@ const Dashboard = () => {
           axios.get('/api/sarees').catch(() => ({ data: mockSarees })),
         ]);
         setBookings(bookingsRes.data);
-        setSarees(sareesRes.data.filter(saree => saree.sellerId?._id === user._id || saree.sellerId === user._id));
+        setSarees(sareesRes.data.filter(saree => saree.sellerId === user.id));
       } else {
         // buyer
         const bookingsRes = await axios.get('/api/bookings').catch(() => ({ data: mockBookings.filter(b => b.buyerId?._id === user._id || b.buyerId === user._id) }));
@@ -48,8 +59,8 @@ const Dashboard = () => {
         setBookings(mockBookings);
         setUsers(mockUsers);
       } else if (user.role === 'seller') {
-        setBookings(mockBookings);
-        setSarees(mockSarees);
+        setBookings(mockBookings.filter(b => ['s1', 's2'].includes(b.sareeId._id))); // Assume seller1 has sarees s1, s2
+        setSarees(mockSarees.filter(saree => ['s1', 's2'].includes(saree._id))); // Filter to seller's sarees
       } else {
         setBookings(mockBookings.filter(b => b.buyerId?._id === user._id || b.buyerId === user._id));
       }
@@ -226,6 +237,65 @@ const Dashboard = () => {
         )
       );
       toast.success('Booking status updated (Demo Mode)');
+    }
+  };
+
+  const handleUpload = async (files) => {
+    const formDataUpload = new FormData();
+    files.forEach(file => formDataUpload.append('images', file));
+    try {
+      const res = await axios.post('/api/sarees/upload', formDataUpload, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+      setFormData(prev => ({ ...prev, images: res.data.images }));
+      toast.success('Images uploaded');
+    } catch (err) {
+      toast.error('Upload failed');
+    }
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      if (editingSaree) {
+        await axios.put(`/api/sarees/${editingSaree.id || editingSaree._id}`, formData);
+        toast.success('Saree updated');
+      } else {
+        await axios.post('/api/sarees', formData);
+        toast.success('Saree added');
+      }
+      setShowForm(false);
+      setEditingSaree(null);
+      setFormData({ title: '', description: '', pricePerDay: '', color: '', occasion: '', images: [], availabilityDates: '' });
+      fetchData();
+    } catch (err) {
+      toast.error('Failed to save saree');
+    }
+  };
+
+  const handleEdit = (saree) => {
+    setFormData({
+      title: saree.title,
+      description: saree.description,
+      pricePerDay: saree.pricePerDay,
+      color: saree.color,
+      occasion: saree.occasion,
+      images: saree.images,
+      availabilityDates: JSON.stringify(saree.availabilityDates || [])
+    });
+    setEditingSaree(saree);
+    setShowForm(true);
+  };
+
+  const handleDelete = async (id) => {
+    if (confirm('Delete this saree?')) {
+      try {
+        await axios.delete(`/api/sarees/${id}`);
+        toast.success('Saree deleted');
+        fetchData();
+      } catch (err) {
+        toast.error('Failed to delete');
+      }
     }
   };
 
@@ -562,13 +632,32 @@ const Dashboard = () => {
               <div className="space-y-6">
                 <div className="flex justify-between items-center">
                   <h2 className="text-2xl font-bold text-gray-900">My Sarees</h2>
-                  <Link 
-                    to="/add-saree" 
+                  <button 
+                    onClick={() => setShowForm(true)}
                     className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-6 py-3 rounded-xl font-semibold hover:shadow-lg transform hover:scale-105 transition-all duration-300"
                   >
                     Add New Saree
-                  </Link>
+                  </button>
                 </div>
+                {showForm && (
+                  <div className="bg-white rounded-2xl shadow-lg p-8">
+                    <h3 className="text-xl font-bold mb-4">{editingSaree ? 'Edit Saree' : 'Add New Saree'}</h3>
+                    <form onSubmit={handleSubmit} className="space-y-4">
+                      <input type="text" placeholder="Title" value={formData.title} onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))} className="w-full p-3 border rounded" required />
+                      <textarea placeholder="Description" value={formData.description} onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))} className="w-full p-3 border rounded" required />
+                      <input type="number" placeholder="Price per day" value={formData.pricePerDay} onChange={(e) => setFormData(prev => ({ ...prev, pricePerDay: e.target.value }))} className="w-full p-3 border rounded" required />
+                      <input type="text" placeholder="Color" value={formData.color} onChange={(e) => setFormData(prev => ({ ...prev, color: e.target.value }))} className="w-full p-3 border rounded" required />
+                      <input type="text" placeholder="Occasion" value={formData.occasion} onChange={(e) => setFormData(prev => ({ ...prev, occasion: e.target.value }))} className="w-full p-3 border rounded" required />
+                      <input type="file" multiple onChange={(e) => handleUpload(Array.from(e.target.files))} className="w-full p-3 border rounded" />
+                      <div>Uploaded Images: {formData.images.length > 0 ? formData.images.join(', ') : 'None'}</div>
+                      <input type="text" placeholder="Availability Dates (JSON array)" value={formData.availabilityDates} onChange={(e) => setFormData(prev => ({ ...prev, availabilityDates: e.target.value }))} className="w-full p-3 border rounded" />
+                      <div className="flex space-x-4">
+                        <button type="submit" className="bg-green-500 text-white px-6 py-3 rounded">Save</button>
+                        <button type="button" onClick={() => { setShowForm(false); setEditingSaree(null); setFormData({ title: '', description: '', pricePerDay: '', color: '', occasion: '', images: [], availabilityDates: '' }); }} className="bg-gray-500 text-white px-6 py-3 rounded">Cancel</button>
+                      </div>
+                    </form>
+                  </div>
+                )}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {sarees.map(saree => (
                     <div key={saree._id} className="bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
@@ -584,6 +673,10 @@ const Dashboard = () => {
                           >
                             View Details →
                           </Link>
+                        </div>
+                        <div className="flex space-x-2 mt-4">
+                          <button onClick={() => handleEdit(saree)} className="bg-blue-500 text-white px-3 py-1 rounded text-sm">Edit</button>
+                          <button onClick={() => handleDelete(saree._id)} className="bg-red-500 text-white px-3 py-1 rounded text-sm">Delete</button>
                         </div>
                       </div>
                     </div>

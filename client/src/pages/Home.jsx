@@ -28,7 +28,7 @@ const Home = () => {
           pricePerDay: 85,
           color: 'Red',
           occasion: 'Wedding',
-          images: ['data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjUwMCIgdmlld0JveD0iMCAwIDQwMCA1MDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSI0MDAiIGhlaWdodD0iNTAwIiBmaWxsPSIjZGMxNDM3Ii8+Cjx0ZXh0IHg9IjIwMCIgeT0iMjUwIiBmb250LWZhbWlseT0iQXJpYWwsIHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMjAiIGZpbGw9IndoaXRlIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIj5SZWQgV2VkZGluZyBTYXJlZTwvdGV4dD4KPC9zdmc+']
+          images: ['https://source.unsplash.com/random/400x500/?saree'],
         },
         {
           _id: 's2',
@@ -36,7 +36,7 @@ const Home = () => {
           pricePerDay: 120,
           color: 'Blue',
           occasion: 'Festive',
-          images: ['data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjUwMCIgdmlld0JveD0iMCAwIDQwMCA1MDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSI0MDAiIGhlaWdodD0iNTAwIiBmaWxsPSIjM2I4MmVjIi8+Cjx0ZXh0IHg9IjIwMCIgeT0iMjUwIiBmb250LWZhbWlseT0iQXJpYWwsIHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMjAiIGZpbGw9IndoaXRlIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIj5CbHVlIEJhbmFyYXNpPC90ZXh0Pgo8L3N2Zz4=']
+          images: ['https://source.unsplash.com/random/400x500/?saree,blue'],
         },
         {
           _id: 's3',
@@ -44,7 +44,7 @@ const Home = () => {
           pricePerDay: 95,
           color: 'Pink',
           occasion: 'Party',
-          images: ['data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjUwMCIgdmlld0JveD0iMCAwIDQwMCA1MDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSI0MDAiIGhlaWdodD0iNTAwIiBmaWxsPSIjZWM0ODk5Ii8+Cjx0ZXh0IHg9IjIwMCIgeT0iMjUwIiBmb250LWZhbWlseT0iQXJpYWwsIHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMjAiIGZpbGw9IndoaXRlIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIj5QaW5rIFBhcnR5IFNhcmVlPC90ZXh0Pgo8L3N2Zz4=']
+          images: ['https://source.unsplash.com/random/400x500/?saree,pink'],
         }
       ];
       setFeaturedSarees(mockSarees);
